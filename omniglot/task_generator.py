@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # code is based on https://github.com/katerakelly/pytorch-maml
 import torchvision
 import torchvision.datasets as dset
@@ -42,12 +43,13 @@ def omniglot_character_folders():
 
 class OmniglotTask(object):
     # This class is for task generation for both meta training and meta testing.
-    # For meta training, we use all 20 samples without valid set (empty here).
-    # For meta testing, we use 1 or 5 shot samples for training, while using the same number of samples for validation.
+    # For meta training, we use all 20 samples without valid set (empty here). 这句话的含义指meta training时，从metatrain_chracter_folders中随机选取`num_classes`个类，然后在这些类中，每类随机采样1个或者5个样本作为sample set。然后在这些类各自的剩余样本中，每类将剩余所有样本作为query set，因为每类有20个样本，所以这里使用了所有的采样出的每类的所有样本(20个)。并且训练过程中，没有验证集。但实际上该项目的训练脚本中，将测试集实际用作了验证集。
+    # For meta testing, we use 1 or 5 shot samples for training, while using the same number of samples for validation. 这句话的含义指meta testing时，从metatest_chracter_folders中随机选取`num_classes`个类，然后在这些类中，每类随机采样1个或者5个样本作为support set。然后在这些类各自的剩余样本中，每类随机采样相同数目的样本作为test set。
     # If set num_samples = 20 and chracter_folders = metatrain_character_folders, we generate tasks for meta training
     # If set num_samples = 1 or 5 and chracter_folders = metatest_chracter_folders, we generate tasks for meta testing
     def __init__(self, character_folders, num_classes, train_num,test_num):
-
+        # 对于meta training，这里的train_num是指sample set中每类采样的样本数，test_num是指query set中每类采样的样本数。
+        # 对于meta testing，这里的train_num是指support set中每类采样的样本数，test_num是指test set中每类采样的样本数。
         self.character_folders = character_folders
         self.num_classes = num_classes
         self.train_num = train_num
@@ -61,7 +63,9 @@ class OmniglotTask(object):
         self.train_roots = []
         self.test_roots = []
         for c in class_folders:
-
+            # print c
+            # if c.split('/')[-1][0] == '.':
+            #     continue
             temp = [os.path.join(c, x) for x in os.listdir(c)]
             samples[c] = random.sample(temp, len(temp))
 
@@ -98,6 +102,8 @@ class Omniglot(FewShotDataset):
         super(Omniglot, self).__init__(*args, **kwargs)
 
     def __getitem__(self, idx):
+        # print self.image_roots
+        # print idx
         image_root = self.image_roots[idx]
         image = Image.open(image_root)
         image = image.convert('L')

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------
 # Project: Learning to Compare: Relation Network for Few-Shot Learning
 # Date: 2017.9.21
@@ -22,13 +23,13 @@ parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 64)
 parser.add_argument("-r","--relation_dim",type = int, default = 8)
 parser.add_argument("-w","--class_num",type = int, default = 5)
-parser.add_argument("-s","--sample_num_per_class",type = int, default = 1)
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 19)
+parser.add_argument("-s","--sample_num_per_class",type = int, default = 1)  # 即论文里的sample images的个数
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 19)  # 即论文里的query images的个数
 parser.add_argument("-e","--episode",type = int, default= 1000000)
 parser.add_argument("-t","--test_episode", type = int, default = 1000)
 parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
 parser.add_argument("-g","--gpu",type=int, default=0)
-parser.add_argument("-u","--hidden_unit",type=int,default=10)
+parser.add_argument("-u","--hidden_unit",type=int,default=10)  # 没用到
 args = parser.parse_args()
 
 
@@ -41,7 +42,7 @@ BATCH_NUM_PER_CLASS = args.batch_num_per_class
 EPISODE = args.episode
 TEST_EPISODE = args.test_episode
 LEARNING_RATE = args.learning_rate
-GPU = args.gpu
+# GPU = args.gpu
 HIDDEN_UNIT = args.hidden_unit
 
 class CNNEncoder(nn.Module):
@@ -130,8 +131,9 @@ def main():
     feature_encoder.apply(weights_init)
     relation_network.apply(weights_init)
 
-    feature_encoder.cuda(GPU)
-    relation_network.cuda(GPU)
+    # feature_encoder.cuda(GPU)
+    # relation_network.cuda(GPU)
+
 
     feature_encoder_optim = torch.optim.Adam(feature_encoder.parameters(),lr=LEARNING_RATE)
     feature_encoder_scheduler = StepLR(feature_encoder_optim,step_size=100000,gamma=0.5)
@@ -139,10 +141,10 @@ def main():
     relation_network_scheduler = StepLR(relation_network_optim,step_size=100000,gamma=0.5)
 
     if os.path.exists(str("./models/omniglot_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")):
-        feature_encoder.load_state_dict(torch.load(str("./models/omniglot_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")))
+        feature_encoder.load_state_dict(torch.load(str("./models/omniglot_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"), map_location='cpu'))
         print("load feature encoder success")
     if os.path.exists(str("./models/omniglot_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")):
-        relation_network.load_state_dict(torch.load(str("./models/omniglot_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")))
+        relation_network.load_state_dict(torch.load(str("./models/omniglot_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"), map_location='cpu'))
         print("load relation network success")
 
     # Step 3: build graph
@@ -169,8 +171,10 @@ def main():
         batches,batch_labels = batch_dataloader.__iter__().next()
 
         # calculate features
-        sample_features = feature_encoder(Variable(samples).cuda(GPU)) # 5x64*5*5
-        batch_features = feature_encoder(Variable(batches).cuda(GPU)) # 20x64*5*5
+        # sample_features = feature_encoder(Variable(samples).cuda(GPU)) # 5x64*5*5
+        # batch_features = feature_encoder(Variable(batches).cuda(GPU)) # 20x64*5*5
+        sample_features = feature_encoder(Variable(samples)) # 5x64*5*5
+        batch_features = feature_encoder(Variable(batches)) # 20x64*5*5
 
         # calculate relations
         # each batch sample link to every samples to calculate relations
@@ -182,8 +186,10 @@ def main():
         relation_pairs = torch.cat((sample_features_ext,batch_features_ext),2).view(-1,FEATURE_DIM*2,5,5)
         relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
-        mse = nn.MSELoss().cuda(GPU)
-        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS*CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1,1), 1)).cuda(GPU)
+        # mse = nn.MSELoss().cuda(GPU)
+        mse = nn.MSELoss()
+        # one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS*CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1,1), 1)).cuda(GPU)
+        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS*CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1,1), 1))
         loss = mse(relations,one_hot_labels)
 
 
@@ -200,10 +206,10 @@ def main():
         feature_encoder_optim.step()
         relation_network_optim.step()
 
-        if (episode+1)%100 == 0:
+        if (episode+1)%1 == 0:
                 print("episode:",episode+1,"loss",loss.data[0])
 
-        if (episode+1)%5000 == 0:
+        if (episode+1)%2 == 0:
 
             # test
             print("Testing...")
@@ -219,8 +225,10 @@ def main():
                 test_images,test_labels = test_dataloader.__iter__().next()
 
                 # calculate features
-                sample_features = feature_encoder(Variable(sample_images).cuda(GPU)) # 5x64
-                test_features = feature_encoder(Variable(test_images).cuda(GPU)) # 20x64
+                # sample_features = feature_encoder(Variable(sample_images).cuda(GPU)) # 5x64
+                # test_features = feature_encoder(Variable(test_images).cuda(GPU)) # 20x64
+                sample_features = feature_encoder(Variable(sample_images))  # 5x64
+                test_features = feature_encoder(Variable(test_images))  # 20x64
 
                 # calculate relations
                 # each batch sample link to every samples to calculate relations
@@ -245,8 +253,8 @@ def main():
             if test_accuracy > last_accuracy:
 
                 # save networks
-                torch.save(feature_encoder.state_dict(),str("./models/omniglot_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
-                torch.save(relation_network.state_dict(),str("./models/omniglot_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
+                torch.save(feature_encoder.state_dict(),str("./models_new/omniglot_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
+                torch.save(relation_network.state_dict(),str("./models_new/omniglot_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
 
                 print("save networks for episode:",episode)
 

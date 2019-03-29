@@ -60,8 +60,12 @@ class MiniImagenetTask(object):
         self.train_roots = []
         self.test_roots = []
         for c in class_folders:
+            # temp = [os.path.join(c, x) for x in os.listdir(c)]
+            temp = []
+            for x in os.listdir(c):
+                if x[0]!='.':
+                    temp.append(os.path.join(c, x))
 
-            temp = [os.path.join(c, x) for x in os.listdir(c)]
             samples[c] = random.sample(temp, len(temp))
             random.shuffle(samples[c])
 
@@ -99,6 +103,8 @@ class MiniImagenet(FewShotDataset):
         image_root = self.image_roots[idx]
         image = Image.open(image_root)
         image = image.convert('RGB')
+        if image.size != (84, 84):
+            image = image.resize((84, 84), resample=Image.LANCZOS)
         if self.transform is not None:
             image = self.transform(image)
         label = self.labels[idx]
