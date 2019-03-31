@@ -10,6 +10,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
 from torch.utils.data.sampler import Sampler
+from keras.preprocessing import image
 
 def imshow(img):
     npimg = img.numpy()
@@ -25,8 +26,8 @@ class Rotate(object):
         return x
 
 def mini_imagenet_folders():
-    train_folder = '../datas/miniImagenet/train'
-    test_folder = '../datas/miniImagenet/test'
+    train_folder = '../datas/imagenet_resnet2048/train'
+    test_folder = '../datas/imagenet_resnet2048/test'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \
@@ -101,16 +102,17 @@ class MiniImagenet(FewShotDataset):
 
     def __getitem__(self, idx):
         image_root = self.image_roots[idx]
-        image = Image.open(image_root)
-        image = image.convert('RGB')
-        if image.size != (84, 84):
-            image = image.resize((84, 84), resample=Image.LANCZOS)
-        if self.transform is not None:
-            image = self.transform(image)
+        img = image.load_img(image_root, target_size=(224, 224))
+        img = img.convert('RGB')
+        img = image.img_to_array(img)
+        # if image.size != (224, 224):
+        #     image = image.resize((224, 224), resample=Image.LANCZOS)
+        # if self.transform is not None:
+        #     image = self.transform(image)
         label = self.labels[idx]
         if self.target_transform is not None:
             label = self.target_transform(label)
-        return image, label
+        return img, label
 
 
 class ClassBalancedSampler(Sampler):
