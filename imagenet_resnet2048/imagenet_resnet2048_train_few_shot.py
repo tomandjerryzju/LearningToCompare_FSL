@@ -20,6 +20,8 @@ import scipy as sp
 import scipy.stats
 from keras.applications.resnet50 import ResNet50
 from keras.applications.imagenet_utils import preprocess_input
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
 
 parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
@@ -35,6 +37,11 @@ parser.add_argument("-ug","--use_gpu",type=bool, default=False)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)
 args = parser.parse_args()
 
+# limit gpu usage
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+config.gpu_options.visible_device_list = "0"
+set_session(tf.Session(config=config))
 
 # Hyper Parameters
 FEATURE_DIM = args.feature_dim
@@ -209,7 +216,7 @@ def main():
         if (episode+1)%1 == 0:
                 print("episode:",episode+1,"loss",loss.data)
 
-        if (episode+1)%1 == 0:
+        if (episode+1)%2000 == 0:
 
             # test
             print("Testing...")
