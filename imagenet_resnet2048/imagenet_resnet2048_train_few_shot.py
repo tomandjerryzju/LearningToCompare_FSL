@@ -25,10 +25,10 @@ parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
 parser.add_argument("-w","--class_num",type = int, default = 5)
-parser.add_argument("-s","--sample_num_per_class",type = int, default = 10)
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)
-parser.add_argument("-e","--episode",type = int, default= 500000)
-parser.add_argument("-t","--test_episode", type = int, default = 100)
+parser.add_argument("-s","--sample_num_per_class",type = int, default = 6)
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 16)
+parser.add_argument("-e","--episode",type = int, default= 2)
+parser.add_argument("-t","--test_episode", type = int, default = 1)
 parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=False)
@@ -210,7 +210,7 @@ def main():
         if (episode+1)%1 == 0:
                 print("episode:",episode+1,"loss",loss.data[0])
 
-        if (episode+1)%5000 == 0:
+        if (episode+1)%1 == 0:
 
             # test
             print("Testing...")
@@ -269,7 +269,7 @@ def main():
                 # torch.save(feature_encoder.state_dict(),str("./models/miniimagenet_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
                 torch.save(relation_network.state_dict(),str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
 
-                print("save networks for episode:",episode)
+                print("save networks for episode:",episode+1)
 
                 last_accuracy = test_accuracy
 
