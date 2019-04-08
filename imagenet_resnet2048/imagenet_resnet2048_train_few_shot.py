@@ -139,7 +139,7 @@ def main():
         relation_network.cuda(GPU)
 
     relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
-    relation_network_scheduler = StepLR(relation_network_optim,step_size=200000,gamma=0.5)
+    relation_network_scheduler = StepLR(relation_network_optim,step_size=10000,gamma=0.5)
 
     if os.path.exists(str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")):
         if USE_GPU:
