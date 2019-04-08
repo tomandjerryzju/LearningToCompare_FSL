@@ -10,9 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import task_generator_test as tg
+import task_generator_test_test as tg
 import os
 import math
 import argparse
@@ -23,15 +22,15 @@ from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 
-parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
+parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
 parser.add_argument("-w","--class_num",type = int, default = 5)
 parser.add_argument("-s","--sample_num_per_class",type = int, default = 10)
 parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)
-parser.add_argument("-e","--episode",type = int, default= 500000)
+parser.add_argument("-e","--episode",type = int, default= 10)
 parser.add_argument("-t","--test_episode", type = int, default = 100)
-parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
+parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=False)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)
@@ -132,14 +131,10 @@ def main():
     print("init neural networks")
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
-    relation_network = RelationNetwork(FEATURE_DIM*2,RELATION_DIM)
-    relation_network.apply(weights_init)
+    relation_network = RelationNetwork(FEATURE_DIM * 2, RELATION_DIM)
 
     if USE_GPU:
         relation_network.cuda(GPU)
-
-    relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
-    relation_network_scheduler = StepLR(relation_network_optim,step_size=200000,gamma=0.5)
 
     if os.path.exists(str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")):
         if USE_GPU:
@@ -148,78 +143,12 @@ def main():
             relation_network.load_state_dict(torch.load(str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"), map_location='cpu'))
         print("load relation network success")
 
-    # Step 3: build graph
-    print("Training...")
-
-    last_accuracy = 0.0
-
+    total_accuracy = 0.0
     for episode in range(EPISODE):
-
-        relation_network_scheduler.step(episode)
-
-        # init dataset
-        # sample_dataloader is to obtain previous samples for compare
-        # batch_dataloader is to batch samples for training
-        task = tg.MiniImagenetTask(metatrain_folders,CLASS_NUM,SAMPLE_NUM_PER_CLASS,BATCH_NUM_PER_CLASS)
-        sample_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=SAMPLE_NUM_PER_CLASS,split="train",shuffle=False)
-        batch_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=BATCH_NUM_PER_CLASS,split="test",shuffle=True)
-
-        # sample datas
-        samples,sample_labels = sample_dataloader.__iter__().next() #25*3*84*84
-        samples = preprocess_input(samples.numpy())
-        batches,batch_labels = batch_dataloader.__iter__().next()
-        batches = preprocess_input(batches.numpy())
-
-        # calculate features
-        sample_features = feature_encoder.predict_on_batch(samples)
-        sample_features = Variable(torch.from_numpy(sample_features.reshape(-1, FEATURE_DIM, 1, 1)))
-        if USE_GPU:
-            sample_features = sample_features.cuda(GPU)
-        sample_features = sample_features.view(CLASS_NUM,SAMPLE_NUM_PER_CLASS,FEATURE_DIM,1,1)
-        sample_features = torch.sum(sample_features,1).squeeze(1)
-        batch_features = feature_encoder.predict_on_batch(batches)
-        batch_features = Variable(torch.from_numpy(batch_features.reshape(-1, FEATURE_DIM, 1, 1)))
-        if USE_GPU:
-            batch_features = batch_features.cuda(GPU)
-
-        # calculate relations
-        # each batch sample link to every samples to calculate relations
-        # to form a 100x128 matrix for relation network
-        sample_features_ext = sample_features.unsqueeze(0).repeat(BATCH_NUM_PER_CLASS*CLASS_NUM,1,1,1,1)
-        batch_features_ext = batch_features.unsqueeze(0).repeat(CLASS_NUM,1,1,1,1)
-        batch_features_ext = torch.transpose(batch_features_ext,0,1)
-        relation_pairs = torch.cat((sample_features_ext,batch_features_ext),2).view(-1,FEATURE_DIM*2,1,1)
-        relation_pairs = relation_pairs.view(relation_pairs.size(0), -1)
-        relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
-
-        mse = nn.MSELoss()
-        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS*CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1,1), 1))
-        if USE_GPU:
-            mse = mse.cuda(GPU)
-            one_hot_labels = one_hot_labels.cuda(GPU)
-        loss = mse(relations,one_hot_labels)
-
-
-        # training
-
-        # feature_encoder.zero_grad()
-        relation_network.zero_grad()
-
-        loss.backward()
-
-        # torch.nn.utils.clip_grad_norm(feature_encoder.parameters(),0.5)
-        # torch.nn.utils.clip_grad_norm(relation_network.parameters(),0.5)
-
-        # feature_encoder_optim.step()
-        relation_network_optim.step()
-
-        if (episode+1)%1 == 0:
-                print("episode:",episode+1,"loss",loss.data)
-
-        if (episode+1)%2000 == 0:
 
             # test
             print("Testing...")
+
             accuracies = []
             for i in range(TEST_EPISODE):
                 total_rewards = 0
@@ -239,7 +168,7 @@ def main():
                     sample_features = Variable(torch.from_numpy(sample_features.reshape(-1, 2048, 1, 1)))
                     if USE_GPU:
                         sample_features = sample_features.cuda(GPU)
-                    sample_features = sample_features.view(CLASS_NUM,SAMPLE_NUM_PER_CLASS,FEATURE_DIM,1,1)
+                    sample_features = sample_features.view(CLASS_NUM, SAMPLE_NUM_PER_CLASS, FEATURE_DIM, 1, 1)
                     sample_features = torch.sum(sample_features,1).squeeze(1)
                     test_features = feature_encoder.predict_on_batch(test_images)
                     test_features = Variable(torch.from_numpy(test_features.reshape(-1, 2048, 1, 1)))
@@ -254,7 +183,6 @@ def main():
                     test_features_ext = test_features.unsqueeze(0).repeat(1*CLASS_NUM,1,1,1,1)
                     test_features_ext = torch.transpose(test_features_ext,0,1)
                     relation_pairs = torch.cat((sample_features_ext,test_features_ext),2).view(-1,FEATURE_DIM*2,1,1)
-                    relation_pairs = relation_pairs.view(relation_pairs.size(0), -1)
                     relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
                     _,predict_labels = torch.max(relations.data,1)
@@ -267,20 +195,13 @@ def main():
                 accuracy = total_rewards/1.0/CLASS_NUM/BATCH_NUM_PER_CLASS
                 accuracies.append(accuracy)
 
-
             test_accuracy,h = mean_confidence_interval(accuracies)
 
             print("test accuracy:",test_accuracy,"h:",h)
 
-            if test_accuracy > last_accuracy:
+            total_accuracy += test_accuracy
 
-                # save networks
-                # torch.save(feature_encoder.state_dict(),str("./models/miniimagenet_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
-                torch.save(relation_network.state_dict(),str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
-
-                print("save networks for episode:",episode+1)
-
-                last_accuracy = test_accuracy
+    print("aver_accuracy:",total_accuracy/EPISODE)
 
 
 if __name__ == '__main__':
