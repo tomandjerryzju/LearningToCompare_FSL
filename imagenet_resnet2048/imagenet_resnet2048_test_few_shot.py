@@ -165,13 +165,13 @@ def main():
 
                     # calculate features
                     sample_features = feature_encoder.predict_on_batch(sample_images)
-                    sample_features = Variable(torch.from_numpy(sample_features.reshape(-1, 2048, 1, 1)))
+                    sample_features = Variable(torch.from_numpy(sample_features.reshape(-1, FEATURE_DIM, 1, 1)))
                     if USE_GPU:
                         sample_features = sample_features.cuda(GPU)
                     sample_features = sample_features.view(CLASS_NUM, SAMPLE_NUM_PER_CLASS, FEATURE_DIM, 1, 1)
                     sample_features = torch.sum(sample_features,1).squeeze(1)
                     test_features = feature_encoder.predict_on_batch(test_images)
-                    test_features = Variable(torch.from_numpy(test_features.reshape(-1, 2048, 1, 1)))
+                    test_features = Variable(torch.from_numpy(test_features.reshape(-1, FEATURE_DIM, 1, 1)))
                     if USE_GPU:
                         test_features = test_features.cuda(GPU)
 
@@ -183,6 +183,7 @@ def main():
                     test_features_ext = test_features.unsqueeze(0).repeat(1*CLASS_NUM,1,1,1,1)
                     test_features_ext = torch.transpose(test_features_ext,0,1)
                     relation_pairs = torch.cat((sample_features_ext,test_features_ext),2).view(-1,FEATURE_DIM*2,1,1)
+                    relation_pairs = relation_pairs.view(relation_pairs.size(0), -1)
                     relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
                     _,predict_labels = torch.max(relations.data,1)
