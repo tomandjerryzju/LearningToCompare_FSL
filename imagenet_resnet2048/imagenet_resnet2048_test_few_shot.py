@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------
 # Project: Learning to Compare: Relation Network for Few-Shot Learning
 # Date: 2017.9.21
@@ -26,14 +27,14 @@ parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
 parser.add_argument("-w","--class_num",type = int, default = 5)
-parser.add_argument("-s","--sample_num_per_class",type = int, default = 10)
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)
-parser.add_argument("-e","--episode",type = int, default= 10)
-parser.add_argument("-t","--test_episode", type = int, default = 100)
+parser.add_argument("-s","--sample_num_per_class",type = int, default = 10) # 即论文里每个类的support images的个数
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 30)  # 即论文里每个类的test images的个数
+parser.add_argument("-e","--episode",type = int, default= 1)
+parser.add_argument("-t","--test_episode", type = int, default = 1)
 parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=False)
-parser.add_argument("-u","--hidden_unit",type=int,default=10)
+parser.add_argument("-u","--hidden_unit",type=int,default=10)   # 没用到
 args = parser.parse_args()
 
 # limit gpu usage
@@ -136,7 +137,7 @@ def main():
     if USE_GPU:
         relation_network.cuda(GPU)
 
-    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_" + str(CLASS_NUM) + "way_" + str(SAMPLE_NUM_PER_CLASS) + "shot.pkl")
+    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_" + "5" + "way_" + "10" + "shot.pkl")
     if os.path.exists(checkpoint_path):
         if USE_GPU:
             relation_network.load_state_dict(torch.load(checkpoint_path))
