@@ -27,7 +27,7 @@ class Rotate(object):
 
 def mini_imagenet_folders():
     train_folder = '../datas/imagenet_resnet2048/train'
-    test_folder = '../datas/imagenet_resnet2048/test'
+    test_folder = '../datas/imagenet_resnet2048/train'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \
@@ -170,9 +170,10 @@ class ClassBalancedSamplerOld(Sampler):
 
 
 def get_mini_imagenet_data_loader(task, num_per_class=1, split='train',shuffle = False):
-    normalize = transforms.Normalize(mean=[0.92206, 0.92206, 0.92206], std=[0.08426, 0.08426, 0.08426])
+    # normalize = transforms.Normalize(mean=[0.92206, 0.92206, 0.92206], std=[0.08426, 0.08426, 0.08426])
 
-    dataset = MiniImagenet(task,split=split,transform=transforms.Compose([transforms.ToTensor(),normalize]))
+    # dataset = MiniImagenet(task,split=split,transform=transforms.Compose([transforms.ToTensor(),normalize]))
+    dataset = MiniImagenet(task, split=split, transform=transforms.Compose([transforms.ToTensor()]))
     if split == 'train':
         sampler = ClassBalancedSamplerOld(num_per_class,task.num_classes, task.train_num,shuffle=shuffle)
 

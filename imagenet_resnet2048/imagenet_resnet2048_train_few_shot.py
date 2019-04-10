@@ -97,7 +97,7 @@ def mean_confidence_interval(data, confidence=0.95):
 
 class RelationNetwork(nn.Module):
     """docstring for RelationNetwork"""
-    def __init__(self,input_size,hidden_size,):
+    def __init__(self,input_size,hidden_size):
         super(RelationNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size,hidden_size)
         self.fc2 = nn.Linear(hidden_size,1)
