@@ -28,9 +28,9 @@ parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
 parser.add_argument("-w","--class_num",type = int, default = 5)
 parser.add_argument("-s","--sample_num_per_class",type = int, default = 10) # 即论文里每个类的support images的个数
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 30)  # 即论文里每个类的test images的个数
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)  # 即论文里每个类的test images的个数
 parser.add_argument("-e","--episode",type = int, default= 1)
-parser.add_argument("-t","--test_episode", type = int, default = 1)
+parser.add_argument("-t","--test_episode", type = int, default = 600)
 parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=False)
@@ -186,7 +186,8 @@ def main():
                     test_features_ext = torch.transpose(test_features_ext,0,1)
                     relation_pairs = torch.cat((sample_features_ext,test_features_ext),2).view(-1,FEATURE_DIM*2,1,1)
                     relation_pairs = relation_pairs.view(relation_pairs.size(0), -1)
-                    relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
+                    relations = relation_network(relation_pairs)
+                    relations = relations.view(-1, CLASS_NUM)
 
                     _,predict_labels = torch.max(relations.data,1)
 
