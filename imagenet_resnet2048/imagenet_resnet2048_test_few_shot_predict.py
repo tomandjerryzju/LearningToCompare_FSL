@@ -7,6 +7,12 @@
 #-------------------------------------
 
 
+'''
+基于原作者的预测脚本imagenet_resnet2048_test_few_shot.py修改而来，预测过程修改为：从某一文件夹下读取待测试的图片，然后进行批量预测。
+其中RN网络为pytorch模型，这是与imagenet_resnet2048_test_few_shot_predict_keras.py唯一不同之处。
+'''
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -254,7 +260,8 @@ def main():
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
     support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/"
-    image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_checked"
+    # image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_checked"
+    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/0"
     output_file = "result.txt"
     relation_network = RelationNetwork(FEATURE_DIM * 2, RELATION_DIM)
     checkpoint_path = "./models/imagenet_resnet2048_relation_network_5way_10shot.pkl"

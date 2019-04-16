@@ -6,10 +6,12 @@
 # All Rights Reserved
 #-------------------------------------
 
+'''
+基于原作者的预测脚本imagenet_resnet2048_test_few_shot.py修改而来，预测过程修改为：从某一文件夹下读取待测试的图片，然后进行批量预测。
+其中RN网络由pytorch模型转换成了keras模型，这是与imagenet_resnet2048_test_few_shot_predict.py唯一不同之处。
+'''
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
 from torch.autograd import Variable
 import numpy as np
 import task_generator_test_test as tg
@@ -26,6 +28,8 @@ from keras.preprocessing import image
 import random
 import time
 import shutil
+from keras.layers import Input, Dense
+from keras.models import Model
 
 parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
@@ -59,18 +63,13 @@ GPU = args.gpu
 USE_GPU = args.use_gpu
 
 
-class RelationNetwork(nn.Module):
-    """docstring for RelationNetwork"""
-    def __init__(self,input_size,hidden_size):
-        super(RelationNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size,hidden_size)
-        self.fc2 = nn.Linear(hidden_size,1)
+def RelationNetwork_keras(input_size, hidden_size):
+    input = Input(shape=(input_size,))
+    x_model = Dense(hidden_size, activation='relu', name='fc1')(input)
+    predictions = Dense(1, activation='sigmoid', name='fc2')(x_model)
+    model = Model(inputs=input, outputs=predictions)
 
-    def forward(self,x):
-
-        x = F.relu(self.fc1(x))
-        x = F.sigmoid(self.fc2(x))
-        return x
+    return model
 
 
 def prepare_pic_array(pic_path, img_height=224, img_width=224):
@@ -174,9 +173,9 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
                     test_features_ext = test_features_ext.transpose((1, 0, 2))
                     relation_pairs = np.concatenate((support_features_ext, test_features_ext), 2)
                     relation_pairs = relation_pairs.reshape(-1, FEATURE_DIM * 2)
-                    relation_pairs = Variable(torch.from_numpy(relation_pairs))
-                    relations = relation_network(relation_pairs)
-                    relations = relations.data.numpy()
+                    # relation_pairs = Variable(torch.from_numpy(relation_pairs))
+                    relations = relation_network.predict_on_batch(relation_pairs)
+                    # relations = relations.data.numpy()
                     relations = relations.reshape(-1, class_num)
                     for i in range(len(relations)):
                         predict_label = np.argmax(relations[i])
@@ -216,9 +215,9 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
             test_features_ext = test_features_ext.transpose((1, 0, 2))
             relation_pairs = np.concatenate((support_features_ext, test_features_ext), 2)
             relation_pairs = relation_pairs.reshape(-1, FEATURE_DIM * 2)
-            relation_pairs = Variable(torch.from_numpy(relation_pairs))
-            relations = relation_network(relation_pairs)
-            relations = relations.data.numpy()
+            # relation_pairs = Variable(torch.from_numpy(relation_pairs))
+            relations = relation_network.predict_on_batch(relation_pairs)
+            # relations = relations.data.numpy()
             relations = relations.reshape(-1, class_num)
             for i in range(len(relations)):
                 predict_label = np.argmax(relations[i])
@@ -254,16 +253,12 @@ def main():
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
     support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/"
-    image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_checked"
+    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/0"
     output_file = "result.txt"
-    relation_network = RelationNetwork(FEATURE_DIM * 2, RELATION_DIM)
-    checkpoint_path = "./models/imagenet_resnet2048_relation_network_5way_10shot.pkl"
-    if os.path.exists(checkpoint_path):
-        if USE_GPU:
-            relation_network.load_state_dict(torch.load(checkpoint_path))
-        else:
-            relation_network.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
-        print("load relation network success")
+    relation_network = RelationNetwork_keras(2048 * 2, 400)
+    checkpoint_path = "./models/relation_network_keras.h5"
+    relation_network.load_weights(checkpoint_path)
+    print("load relation network success")
     batch_predict(feature_encoder, relation_network, support_set, 6, 10, image_root, output_file, batch_size=20)
 
 

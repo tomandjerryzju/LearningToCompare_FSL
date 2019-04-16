@@ -2,6 +2,7 @@ imagenet_resnet2048/models
 imagenet_resnet2048/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5
 .idea
 datas
+imagenet_resnet2048/predict_result
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
