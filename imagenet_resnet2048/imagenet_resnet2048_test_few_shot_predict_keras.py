@@ -243,12 +243,6 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
 
 
 def main():
-    # Step 1: init data folders
-    print("init data folders")
-    # init character folders for dataset construction
-    metatrain_folders,metatest_folders = tg.mini_imagenet_folders()
-
-    # Step 2: init neural networks
     print("init neural networks")
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
