@@ -10,15 +10,8 @@
 基于原作者的预测脚本imagenet_resnet2048_test_few_shot_predict_keras.py修改而来，分布式预测脚本。
 '''
 
-
-from torch.autograd import Variable
 import numpy as np
-import task_generator_test_test as tg
 import os
-import math
-import argparse
-import scipy as sp
-import scipy.stats
 from keras.applications.resnet50 import ResNet50
 from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
@@ -30,36 +23,12 @@ import shutil
 from keras.layers import Input, Dense
 from keras.models import Model
 
-parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
-parser.add_argument("-f","--feature_dim",type = int, default = 2048)
-parser.add_argument("-r","--relation_dim",type = int, default = 400)
-parser.add_argument("-w","--class_num",type = int, default = 5)
-parser.add_argument("-s","--sample_num_per_class",type = int, default = 10) # 即论文里每个类的support images的个数
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 30)  # 即论文里每个类的test images的个数
-parser.add_argument("-e","--episode",type = int, default= 1)
-parser.add_argument("-t","--test_episode", type = int, default = 1)
-parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
-parser.add_argument("-g","--gpu",type=int, default=0)
-parser.add_argument("-ug","--use_gpu",type=bool, default=False)
-args = parser.parse_args()
 
 # limit gpu usage
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 config.gpu_options.visible_device_list = "0"
 set_session(tf.Session(config=config))
-
-# Hyper Parameters
-FEATURE_DIM = args.feature_dim
-RELATION_DIM = args.relation_dim
-CLASS_NUM = args.class_num
-SAMPLE_NUM_PER_CLASS = args.sample_num_per_class
-BATCH_NUM_PER_CLASS = args.batch_num_per_class
-EPISODE = args.episode
-TEST_EPISODE = args.test_episode
-LEARNING_RATE = args.learning_rate
-GPU = args.gpu
-USE_GPU = args.use_gpu
 
 
 def RelationNetwork_keras(input_size, hidden_size):
@@ -172,16 +141,12 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
                     test_features_ext = np.tile(test_features, (class_num, 1, 1))
                     test_features_ext = test_features_ext.transpose((1, 0, 2))
                     relation_pairs = np.concatenate((support_features_ext, test_features_ext), 2)
-                    relation_pairs = relation_pairs.reshape(-1, FEATURE_DIM * 2)
-                    # relation_pairs = Variable(torch.from_numpy(relation_pairs))
+                    relation_pairs = relation_pairs.reshape(-1, 2048 * 2)
                     relations = relation_network.predict_on_batch(relation_pairs)
-                    # relations = relations.data.numpy()
                     relations = relations.reshape(-1, class_num)
                     for i in range(len(relations)):
                         predict_label = np.argmax(relations[i])
                         predict_score = np.max(relations[i])
-                        # if predict_score <= 0.5:
-                        #     predict_label = 6
                         line = [filename_list[i], str(predict_label), str(predict_score)]
                         line = '\t'.join(line) + '\n'
                         fout.write(line)
@@ -214,16 +179,12 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
             test_features_ext = np.tile(test_features, (class_num, 1, 1))
             test_features_ext = test_features_ext.transpose((1, 0, 2))
             relation_pairs = np.concatenate((support_features_ext, test_features_ext), 2)
-            relation_pairs = relation_pairs.reshape(-1, FEATURE_DIM * 2)
-            # relation_pairs = Variable(torch.from_numpy(relation_pairs))
+            relation_pairs = relation_pairs.reshape(-1, 2048 * 2)
             relations = relation_network.predict_on_batch(relation_pairs)
-            # relations = relations.data.numpy()
             relations = relations.reshape(-1, class_num)
             for i in range(len(relations)):
                 predict_label = np.argmax(relations[i])
                 predict_score = np.max(relations[i])
-                # if predict_score <= 0.5:
-                #     predict_label = 6
                 line = [filename_list[i], str(predict_label), str(predict_score)]
                 line = '\t'.join(line) + '\n'
                 fout.write(line)
@@ -250,7 +211,7 @@ def main():
     image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/0"
     output_file = "result.txt"
     relation_network = RelationNetwork_keras(2048 * 2, 400)
-    checkpoint_path = "./models/relation_network_keras.h5"
+    checkpoint_path = "/Users/hyc/workspace/LearningToCompare_FSL/imagenet_resnet2048/models/relation_network_keras.h5"
     relation_network.load_weights(checkpoint_path)
     print("load relation network success")
     batch_predict(feature_encoder, relation_network, support_set, 6, 10, image_root, output_file, batch_size=20)
