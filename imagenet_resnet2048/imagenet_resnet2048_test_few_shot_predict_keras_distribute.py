@@ -7,8 +7,7 @@
 #-------------------------------------
 
 '''
-基于原作者的预测脚本imagenet_resnet2048_test_few_shot.py修改而来，预测过程修改为：从某一文件夹下读取待测试的图片，然后进行批量预测。
-其中RN网络由pytorch模型转换成了keras模型，这是与imagenet_resnet2048_test_few_shot_predict.py唯一不同之处。
+基于原作者的预测脚本imagenet_resnet2048_test_few_shot_predict_keras.py修改而来，分布式预测脚本。
 '''
 
 
@@ -88,6 +87,7 @@ def prepare_pic_array(pic_path, img_height=224, img_width=224):
 
 def prepare_feature_per_class(feature_encoder, image_root, support_num_per_class):
     file_list = os.listdir(image_root)
+    random.seed(1)
     random.shuffle(file_list)
     pic_arrays = []
     feature = None

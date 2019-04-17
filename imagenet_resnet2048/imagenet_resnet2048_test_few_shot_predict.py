@@ -95,6 +95,7 @@ def prepare_pic_array(pic_path, img_height=224, img_width=224):
 
 def prepare_feature_per_class(feature_encoder, image_root, support_num_per_class):
     file_list = os.listdir(image_root)
+    random.seed(1)
     random.shuffle(file_list)
     pic_arrays = []
     feature = None
