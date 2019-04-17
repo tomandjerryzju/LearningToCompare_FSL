@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <!-- tensorflow作业的名字 -->
+        <name>afo.app.name</name>
+        <value>APP_NAME</value>
+    </property>
+    <property>
+        <!-- tensorflow作业做在的队列 -->
+        <name>afo.app.queue</name>
+        <value>root.gh_training.hadoop-dpsr.ai</value>
+    </property>
+    <property>
+        <!-- tensorflow virtaulenv的版本，pip 列表：https://wiki.sankuai.com/pages/viewpage.action?pageId=950869185 -->
+        <name>afo.engine.tensorflow.virtualenv.name</name>
+        <value>tensorflow_1_10_0</value>
+    </property>
+    <property>
+        <name>afo.docker.image.name</name>
+        <value>registryonline-hulk.sankuai.com/custom_prod/com.sankuai.data.hadoop.gpu/hadoop-dpsr_centos7:tf1.10.0-keras2.0.6-dlibcuda-opencv_v0.1</value>
+    </property>
+    <property>
+        <name>afo.container.mode</name>
+        <value>job</value>
+    </property>
+    <property>
+        <name>afo.container.password</name>
+        <value>hejiawei</value>
+    </property>
+    <!-- defined ps and worker size -->
+    <property>
+        <!-- tensorflow作业使用的parameter server的个数 -->
+        <name>parameter.servers</name>
+        <value>0</value>
+    </property>
+    <property>
+        <!-- tensorflow作业的worker的个数 -->
+        <name>workers</name>
+        <value>WORKERS</value>
+    </property>
+    <!-- defined ps/worker resource -->
+    <property>
+        <!-- tensorflow作业的worker的内存大小，单位是MB -->
+        <name>worker.memory</name>
+        <value>10240</value>
+    </property>
+    <property>
+        <!-- tensorflow作业的worker的cpu个数 -->
+        <name>worker.vcore</name>
+        <value>8</value>
+    </property>
+    <property>
+                <!-- tensorflow作业的worker的gpu个数 -->
+        <name>worker.gpu</name>
+        <value>1</value>
+    </property>
+    <property>
+       <name>args.workers</name>
+       <value>WORKERS</value>
+    </property>
+    <!-- defined ps/worker main python script -->
+    <property>
+        <!-- tensorflow作业的worker所执行的命令，也就是入口脚本 -->
+        <name>worker.script</name>
+        <value>python WORKER_SCRIPT</value>
+    </property>
+    <!-- 所有name为args开头的配置都是传给worker执行的脚本的命令行参数 -->
+    <property>
+        <name>args.pkl_path</name>
+        <value>MODEL_HDFS_PATH</value>
+    </property>
+    <property>
+        <!-- 类似的，这个参数等价于传递给入口脚本 -batch_size参数 -->
+        <name>args.batch_size</name>
+        <value>3000</value>
+    </property>
+    <property>
+        <!--单节点并行数-->
+        <name>args.proc_count</name>
+        <value>20</value>
+    </property>
+    <property>
+        <name>args.picid_index</name>
+        <value>0</value>
+    </property>
+    <property>
+        <name>args.picurl_index</name>
+        <value>1</value>
+    </property>
+     <property>
+        <name>args.picvec_index</name>
+        <value>2</value>
+    </property>
+    <!--<property>-->
+    <!--<name>args.output_root</name>-->
+    <!--<value>viewfs://hadoop-meituan/user/hive/warehouse/mart_dpsr.db/ugc/dishpic_score</value>-->
+    <!--</property>-->
+    <!--<property>-->
+    <!--<name>args.url_root</name>-->
+    <!--<value>viewfs://hadoop-meituan/ghnn05/hadoop-dpsr/hejiawei03/dist_predict_datas/test_shuffle</value>-->
+    <!--</property>-->
+    <property>
+        <name>args.output_root</name>
+        <value>OUTPUT_HDFS_PATH</value>
+    </property>
+    <property>
+        <name>args.url_root</name>
+        <value>INPUT_HDFS_PATH</value>
+    </property>
+    <property>
+        <name>args.model_define_name</name>
+        <value>MODEL_DEFINE_NAME</value>
+    </property>
+    <property>
+        <!-- checkpoint 和 tensorboard 的输出录几个，请确保路径有读写权限-->
+        <name>args.log_dir</name>
+        <value>viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/output_log</value>
+    </property>
+    <!-- defined tensor_board log_dir -->
+    <property>
+        <!-- 如果with.tensor.board参数设置为true，则会在1/启动worker后，会启动tensorboard程序-->
+        <name>with.tensor.board</name>
+        <value>false</value>
+    </property>
+    <property>
+        <!-- tensorboard所读取的目录，可以读取hdfs目录，但是如果是hdfs目录，请注意需要使用 viewfs://hadoop-meituan/，而不可以是 viewfs:/// 这种方式-->
+        <name>board.log_dir</name>
+        <value>viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/output_log</value>
+    </property>
+</configuration>
