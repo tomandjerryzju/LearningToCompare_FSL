@@ -257,6 +257,7 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
     else:
         file_mode = 'w'
     support_features, support_labels = prepare_features_support_set(feature_encoder, support_set, class_num, support_num_per_class)
+    print support_features
     with tf.gfile.GFile(output_file, file_mode) as fout:
         for tmp_batch, tmp_info in prepare_gevent_batch(url_generator, batch_size):
             try:
