@@ -49,6 +49,9 @@ def prepare_pic_array(pic_path, img_height=224, img_width=224):
         img = img.resize((224, 224))
         img = img.convert('RGB')
         x = image.img_to_array(img)
+        print pic_path
+        print x
+        exit(1)
         if x.shape != (img_height, img_width, 3):
             print('filepath shape unmatched: %s shape=%s' % (pic_path, x.shape))
             return None
