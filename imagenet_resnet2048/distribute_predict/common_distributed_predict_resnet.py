@@ -260,7 +260,7 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
     else:
         file_mode = 'w'
     support_features, support_labels = prepare_features_support_set(feature_encoder, support_set, class_num, support_num_per_class)
-    print support_features
+    # print support_features
     with tf.gfile.GFile(output_file, file_mode) as fout:
         for tmp_batch, tmp_info in prepare_gevent_batch(url_generator, batch_size):
             try:
@@ -361,9 +361,9 @@ if __name__ == '__main__':
     print 'RelationNetwork_keras init done'
 
     # params need to be set
-    class_num = 7
-    support_num_per_class = 1
-    support_set = "viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/fsl/support_set/test_v3_hdfs_OSL"
+    class_num = 6
+    support_num_per_class = 10
+    support_set = "viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/fsl/support_set/test_v3_hdfs"
     batch_predict(resnet_model, model, support_set, class_num, support_num_per_class, url_gen, output_path, batch_size=20)
     print 'batch size: %s' % FLAGS.batch_size
     print 'output path: %s' % output_path
