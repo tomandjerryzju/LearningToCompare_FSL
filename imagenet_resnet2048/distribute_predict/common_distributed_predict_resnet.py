@@ -79,9 +79,6 @@ def prepare_feature_per_class(feature_encoder, image_root, support_num_per_class
                 try:
                     pic_arrays = np.array(pic_arrays)
                     pic_arrays = preprocess_input(pic_arrays)
-                    print filename
-                    print pic_arrays
-                    exit(1)
                     features = feature_encoder.predict_on_batch(pic_arrays)
                     feature = features.sum(axis=0)
                     break
