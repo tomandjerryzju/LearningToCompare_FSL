@@ -102,7 +102,9 @@ class MiniImagenet(FewShotDataset):
 
     def __getitem__(self, idx):
         image_root = self.image_roots[idx]
-        img = image.load_img(image_root, target_size=(224, 224))
+        # img = image.load_img(image_root, target_size=(224, 224))
+        img = Image.open(image_root)
+        img = img.resize((224, 224))
         img = img.convert('RGB')
         img = image.img_to_array(img)
         # if image.size != (224, 224):

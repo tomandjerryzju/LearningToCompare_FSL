@@ -34,7 +34,7 @@ parser.add_argument("-e","--episode",type = int, default= 500000)
 parser.add_argument("-t","--test_episode", type = int, default = 100)
 parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
 parser.add_argument("-g","--gpu",type=int, default=0)
-parser.add_argument("-ug","--use_gpu",type=bool, default=False)
+parser.add_argument("-ug","--use_gpu",type=bool, default=True)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)   # 没用到
 args = parser.parse_args()
 
