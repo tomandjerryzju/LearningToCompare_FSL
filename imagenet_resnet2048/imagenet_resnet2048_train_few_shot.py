@@ -27,9 +27,9 @@ from keras.backend.tensorflow_backend import set_session
 parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
-parser.add_argument("-w","--class_num",type = int, default = 5)
+parser.add_argument("-w","--class_num",type = int, default = 20)
 parser.add_argument("-s","--sample_num_per_class",type = int, default = 20) # 即论文里每个类的sample images的个数
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 30)  # 即论文里每个类的query images的个数
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)  # 即论文里每个类的query images的个数
 parser.add_argument("-e","--episode",type = int, default= 500000)
 parser.add_argument("-t","--test_episode", type = int, default = 100)
 parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
@@ -140,7 +140,7 @@ def main():
         relation_network.cuda(GPU)
 
     relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
-    relation_network_scheduler = StepLR(relation_network_optim,step_size=10000,gamma=0.5)
+    relation_network_scheduler = StepLR(relation_network_optim,step_size=20000,gamma=0.5)
 
     checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")
     if os.path.exists(checkpoint_path):
