@@ -218,7 +218,7 @@ def main():
         if (episode+1)%1 == 0:
                 print("episode:",episode+1,"loss",loss.data)
 
-        if (episode+1)%2000 == 0:
+        if (episode+1)%1 == 0:
 
             # test
             print("Testing...")
