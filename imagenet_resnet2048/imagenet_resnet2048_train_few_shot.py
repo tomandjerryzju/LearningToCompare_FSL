@@ -233,6 +233,8 @@ def main():
                 sample_images,sample_labels = sample_dataloader.__iter__().next()
                 sample_images = preprocess_input(sample_images.numpy())
                 for test_images,test_labels in test_dataloader:
+                    if USE_GPU:
+                        test_labels = test_labels.cuda(GPU)
                     batch_size = test_labels.shape[0]
                     test_images = preprocess_input(test_images.numpy())
 
