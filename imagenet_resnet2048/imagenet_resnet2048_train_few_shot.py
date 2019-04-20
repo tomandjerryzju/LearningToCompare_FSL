@@ -27,11 +27,11 @@ from keras.backend.tensorflow_backend import set_session
 parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
-parser.add_argument("-w","--class_num",type = int, default = 5)
-parser.add_argument("-s","--sample_num_per_class",type = int, default = 10) # 即论文里每个类的sample images的个数
+parser.add_argument("-w","--class_num",type = int, default = 10)
+parser.add_argument("-s","--sample_num_per_class",type = int, default = 20) # 即论文里每个类的sample images的个数
 parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)  # 即论文里每个类的query images的个数
-parser.add_argument("-e","--episode",type = int, default= 1)
-parser.add_argument("-t","--test_episode", type = int, default = 1)
+parser.add_argument("-e","--episode",type = int, default= 500000)
+parser.add_argument("-t","--test_episode", type = int, default = 100)
 parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=True)
@@ -218,7 +218,7 @@ def main():
         if (episode+1)%1 == 0:
                 print("episode:",episode+1,"loss",loss.data)
 
-        if (episode+1)%1 == 0:
+        if (episode+1)%2000 == 0:
 
             # test
             print("Testing...")
