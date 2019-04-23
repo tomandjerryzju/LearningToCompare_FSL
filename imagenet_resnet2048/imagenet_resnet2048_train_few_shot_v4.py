@@ -27,7 +27,7 @@ from keras.backend.tensorflow_backend import set_session
 parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
-parser.add_argument("-w","--class_num",type = int, default = 10)
+parser.add_argument("-w","--class_num",type = int, default = 6)
 parser.add_argument("-s","--sample_num_per_class",type = int, default = 20) # 即论文里每个类的sample images的个数
 parser.add_argument("-b","--batch_num_per_class",type = int, default = 5)  # 即论文里每个类的query images的个数
 parser.add_argument("-e","--episode",type = int, default= 500000)
