@@ -91,7 +91,7 @@ def deal_with_dataset(dataset, model):
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print 'usage : python resnet50_fcl_train.py DATA_ROOT output_model_path'
+        print 'usage : python resnet50_fcl_train.py dataset'
         exit(1)
 
     dataset = sys.argv[1]
