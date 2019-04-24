@@ -16,10 +16,11 @@ from keras.backend.tensorflow_backend import set_session
 from PIL import Image
 
 # limit gpu usage
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = "0"
-set_session(tf.Session(config=config))
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
+# config.gpu_options.visible_device_list = "0"
+# set_session(tf.Session(config=config))
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 PARENT_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(PARENT_PATH)
