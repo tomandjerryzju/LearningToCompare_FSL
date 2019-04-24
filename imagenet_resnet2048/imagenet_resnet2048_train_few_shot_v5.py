@@ -144,7 +144,7 @@ def main():
     relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
     relation_network_scheduler = StepLR(relation_network_optim,step_size=20000,gamma=0.5)
 
-    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")
+    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot_3fcl.pkl")
     if os.path.exists(checkpoint_path):
         if USE_GPU:
             relation_network.load_state_dict(torch.load(checkpoint_path))
