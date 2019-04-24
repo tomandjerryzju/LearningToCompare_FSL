@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # code is based on https://github.com/katerakelly/pytorch-maml
 import torchvision
 import torchvision.datasets as dset
@@ -26,7 +27,7 @@ class Rotate(object):
         return x
 
 def mini_imagenet_folders():
-    train_folder = '../datas/imagenet_resnet2048/train'
+    train_folder = '../datas/imagenet_resnet2048/train'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
     test_folder = '../datas/imagenet_resnet2048/val'
 
     metatrain_folders = [os.path.join(train_folder, label) \
@@ -63,7 +64,7 @@ class MiniImagenetTask(object):
         for c in class_folders:
             # temp = [os.path.join(c, x) for x in os.listdir(c)]
             temp = []
-            for x in os.listdir(c):
+            for x in os.listdir(c): # 类别文件夹中包含隐藏文件无影响，这里会做判断
                 if x[0]!='.':
                     temp.append(os.path.join(c, x))
 
