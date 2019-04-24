@@ -85,8 +85,8 @@ def deal_with_dataset(dataset, model):
     for folder in folders:
         if folder.startswith('.'):
             continue
-        file_root = os.path.join(dataset, folders)
-        output_root = os.path.join(dataset.split('/')[-1] + 'picvec', folders)
+        file_root = os.path.join(dataset, folder)
+        output_root = os.path.join(dataset.split('/')[-1] + 'picvec', folder)
         save_top_feature(file_root, model, output_root, 224, 224)
 
 
