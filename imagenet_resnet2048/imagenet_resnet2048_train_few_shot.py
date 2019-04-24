@@ -232,7 +232,7 @@ def main():
 
                 sample_images,sample_labels = sample_dataloader.__iter__().next()
                 sample_images = preprocess_input(sample_images.numpy())
-                for test_images,test_labels in test_dataloader:
+                for test_images,test_labels in test_dataloader: # 只会执行循环体一次，因此此处没必要用for循环
                     if USE_GPU:
                         test_labels = test_labels.cuda(GPU)
                     batch_size = test_labels.shape[0]
