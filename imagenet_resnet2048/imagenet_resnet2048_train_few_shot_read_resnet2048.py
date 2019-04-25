@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import task_generator_test as tg
+import task_generator_read_resnet2048 as tg
 import os
 import math
 import argparse
@@ -27,9 +27,9 @@ from keras.backend.tensorflow_backend import set_session
 parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
-parser.add_argument("-w","--class_num",type = int, default = 10)
+parser.add_argument("-w","--class_num",type = int, default = 30)
 parser.add_argument("-s","--sample_num_per_class",type = int, default = 20) # 即论文里每个类的sample images的个数
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 20)  # 即论文里每个类的query images的个数
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 5)  # 即论文里每个类的query images的个数
 parser.add_argument("-e","--episode",type = int, default= 500000)
 parser.add_argument("-t","--test_episode", type = int, default = 100)
 parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
@@ -64,36 +64,6 @@ def mean_confidence_interval(data, confidence=0.95):
     h = se * sp.stats.t._ppf((1+confidence)/2., n-1)
     return m,h
 
-# class CNNEncoder(nn.Module):
-#     """docstring for ClassName"""
-#     def __init__(self):
-#         super(CNNEncoder, self).__init__()
-#         self.layer1 = nn.Sequential(
-#                         nn.Conv2d(3,64,kernel_size=3,padding=0),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU(),
-#                         nn.MaxPool2d(2))
-#         self.layer2 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=0),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU(),
-#                         nn.MaxPool2d(2))
-#         self.layer3 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=1),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU())
-#         self.layer4 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=1),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU())
-#
-#     def forward(self,x):
-#         out = self.layer1(x)
-#         out = self.layer2(out)
-#         out = self.layer3(out)
-#         out = self.layer4(out)
-#         #out = out.view(out.size(0),-1)
-#         return out # 64
 
 class RelationNetwork(nn.Module):
     """docstring for RelationNetwork"""
@@ -131,8 +101,8 @@ def main():
 
     # Step 2: init neural networks
     print("init neural networks")
-    feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
-    feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
+    # feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
+    # feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
     relation_network = RelationNetwork(FEATURE_DIM*2,RELATION_DIM)
     relation_network.apply(weights_init)
 
@@ -168,19 +138,15 @@ def main():
 
         # sample datas
         samples,sample_labels = sample_dataloader.__iter__().next() #25*3*84*84
-        samples = preprocess_input(samples.numpy())
         batches,batch_labels = batch_dataloader.__iter__().next()
-        batches = preprocess_input(batches.numpy())
 
         # calculate features
-        sample_features = feature_encoder.predict_on_batch(samples)
-        sample_features = Variable(torch.from_numpy(sample_features.reshape(-1, FEATURE_DIM, 1, 1)))
+        sample_features = Variable(samples.view(-1, FEATURE_DIM, 1, 1))
         if USE_GPU:
             sample_features = sample_features.cuda(GPU)
         sample_features = sample_features.view(CLASS_NUM,SAMPLE_NUM_PER_CLASS,FEATURE_DIM,1,1)
         sample_features = torch.sum(sample_features,1).squeeze(1)
-        batch_features = feature_encoder.predict_on_batch(batches)
-        batch_features = Variable(torch.from_numpy(batch_features.reshape(-1, FEATURE_DIM, 1, 1)))
+        batch_features = Variable(batches.view(-1, FEATURE_DIM, 1, 1))
         if USE_GPU:
             batch_features = batch_features.cuda(GPU)
 
@@ -231,22 +197,18 @@ def main():
                 test_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=BATCH_NUM_PER_CLASS,split="test",shuffle=False)
 
                 sample_images,sample_labels = sample_dataloader.__iter__().next()
-                sample_images = preprocess_input(sample_images.numpy())
                 for test_images,test_labels in test_dataloader: # 只会执行循环体一次，因此此处没必要用for循环
                     if USE_GPU:
                         test_labels = test_labels.cuda(GPU)
                     batch_size = test_labels.shape[0]
-                    test_images = preprocess_input(test_images.numpy())
 
                     # calculate features
-                    sample_features = feature_encoder.predict_on_batch(sample_images)
-                    sample_features = Variable(torch.from_numpy(sample_features.reshape(-1, FEATURE_DIM, 1, 1)))
+                    sample_features = Variable(sample_images.view(-1, FEATURE_DIM, 1, 1))
                     if USE_GPU:
                         sample_features = sample_features.cuda(GPU)
                     sample_features = sample_features.view(CLASS_NUM,SAMPLE_NUM_PER_CLASS,FEATURE_DIM,1,1)
                     sample_features = torch.sum(sample_features,1).squeeze(1)
-                    test_features = feature_encoder.predict_on_batch(test_images)
-                    test_features = Variable(torch.from_numpy(test_features.reshape(-1, FEATURE_DIM, 1, 1)))
+                    test_features = Variable(test_images.view(-1, FEATURE_DIM, 1, 1))
                     if USE_GPU:
                         test_features = test_features.cuda(GPU)
 
@@ -279,7 +241,6 @@ def main():
             if test_accuracy > last_accuracy:
 
                 # save networks
-                # torch.save(feature_encoder.state_dict(),str("./models/miniimagenet_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
                 torch.save(relation_network.state_dict(), checkpoint_path)
 
                 print("save networks for episode:",episode+1)

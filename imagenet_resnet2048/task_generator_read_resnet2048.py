@@ -27,8 +27,11 @@ class Rotate(object):
         return x
 
 def mini_imagenet_folders():
-    train_folder = '../datas/imagenet_resnet2048/train'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
-    test_folder = '../datas/imagenet_resnet2048/val'
+    '''
+    不依赖pytorch
+    '''
+    train_folder = '../datas/imagenet_resnet2048/train_picvec'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
+    test_folder = '../datas/imagenet_resnet2048/val_picvec'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \
@@ -46,6 +49,9 @@ def mini_imagenet_folders():
     return metatrain_folders,metatest_folders
 
 class MiniImagenetTask(object):
+    '''
+    不依赖pytorch
+    '''
 
     def __init__(self, character_folders, num_classes, train_num,test_num):
 
@@ -81,6 +87,9 @@ class MiniImagenetTask(object):
         return os.path.join(*sample.split('/')[:-1])
 
 class FewShotDataset(Dataset):
+    '''
+    依赖pytorch
+    '''
 
     def __init__(self, task, split='train', transform=None, target_transform=None):
         self.transform = transform # Torch operations on the input image
@@ -97,25 +106,22 @@ class FewShotDataset(Dataset):
         raise NotImplementedError("This is an abstract class. Subclass this class for your particular dataset.")
 
 class MiniImagenet(FewShotDataset):
+    '''
+    依赖pytorch
+    '''
 
     def __init__(self, *args, **kwargs):
         super(MiniImagenet, self).__init__(*args, **kwargs)
 
     def __getitem__(self, idx):
         image_root = self.image_roots[idx]
-        # img = image.load_img(image_root, target_size=(224, 224))
-        img = Image.open(image_root)
-        img = img.resize((224, 224))
-        img = img.convert('RGB')
-        img = image.img_to_array(img)
-        # if image.size != (224, 224):
-        #     image = image.resize((224, 224), resample=Image.LANCZOS)
+        pic_vec = np.load(image_root)
         # if self.transform is not None:
         #     image = self.transform(image)
         label = self.labels[idx]
         if self.target_transform is not None:
             label = self.target_transform(label)
-        return img, label
+        return pic_vec, label
 
 
 class ClassBalancedSampler(Sampler):
