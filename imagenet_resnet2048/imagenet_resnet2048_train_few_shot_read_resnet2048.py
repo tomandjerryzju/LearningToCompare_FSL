@@ -34,7 +34,7 @@ parser.add_argument("-e","--episode",type = int, default= 500000)
 parser.add_argument("-t","--test_episode", type = int, default = 100)
 parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
 parser.add_argument("-g","--gpu",type=int, default=0)
-parser.add_argument("-ug","--use_gpu",type=bool, default=True)
+parser.add_argument("-ug","--use_gpu",type=bool, default=False)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)   # 没用到
 args = parser.parse_args()
 
@@ -93,6 +93,27 @@ def weights_init(m):
         m.weight.data.normal_(0, 0.01)
         m.bias.data = torch.ones(m.bias.data.size())
 
+
+# def accuracy_calc(labels, preds):
+#     _, predict_labels = torch.max(preds.data, 1)
+#     rewards = [1 if predict_labels[j] == labels[j] else 0 for j in range(labels.shape[0])]
+#     total_rewards = np.sum(rewards)
+#     accuracy = total_rewards / 1.0 / labels.shape[0]
+#
+#     return accuracy
+#
+#
+# def loss_calc(labels, preds):
+#     mse = nn.MSELoss()
+#     one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, labels.view(-1, 1), 1))
+#     if USE_GPU:
+#         mse = mse.cuda(GPU)
+#         one_hot_labels = one_hot_labels.cuda(GPU)
+#     loss = mse(preds, one_hot_labels)
+#
+#     return loss
+
+
 def main():
     # Step 1: init data folders
     print("init data folders")
@@ -137,8 +158,10 @@ def main():
         batch_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=BATCH_NUM_PER_CLASS,split="test",shuffle=True)
 
         # sample datas
-        samples,sample_labels = sample_dataloader.__iter__().next() #25*3*84*84
+        samples,sample_labels = sample_dataloader.__iter__().next() #25*3*84*84，sample_labels用不到
         batches,batch_labels = batch_dataloader.__iter__().next()
+        if USE_GPU:
+            batch_labels = batch_labels.cuda(GPU)
 
         # calculate features
         sample_features = Variable(samples.view(-1, FEATURE_DIM, 1, 1))
@@ -160,13 +183,17 @@ def main():
         relation_pairs = relation_pairs.view(relation_pairs.size(0), -1)
         relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
+        _, predict_labels = torch.max(relations.data, 1)
+        rewards = [1 if predict_labels[j] == batch_labels[j] else 0 for j in range(batch_labels.shape[0])]
+        total_rewards = np.sum(rewards)
+        accuracy = total_rewards / 1.0 / batch_labels.shape[0]
+
         mse = nn.MSELoss()
-        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS*CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1,1), 1))
+        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1, 1), 1))
         if USE_GPU:
             mse = mse.cuda(GPU)
             one_hot_labels = one_hot_labels.cuda(GPU)
-        loss = mse(relations,one_hot_labels)
-
+        loss = mse(relations, one_hot_labels)
 
         # training
 
@@ -182,13 +209,14 @@ def main():
         relation_network_optim.step()
 
         if (episode+1)%1 == 0:
-                print("episode:",episode+1,"loss",loss.data)
+                print("episode:",episode+1, "train loss:",loss.data, "train accuracy:",accuracy)
 
         if (episode+1)%2000 == 0:
 
             # test
             print("Testing...")
             accuracies = []
+            test_losses = []
             for i in range(TEST_EPISODE):
                 total_rewards = 0
                 task = tg.MiniImagenetTask(metatest_folders,CLASS_NUM,SAMPLE_NUM_PER_CLASS,BATCH_NUM_PER_CLASS)
@@ -196,7 +224,7 @@ def main():
                 # num_per_class = 5
                 test_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=BATCH_NUM_PER_CLASS,split="test",shuffle=False)
 
-                sample_images,sample_labels = sample_dataloader.__iter__().next()
+                sample_images,sample_labels = sample_dataloader.__iter__().next()   # sample_labels用不到
                 for test_images,test_labels in test_dataloader: # 只会执行循环体一次，因此此处没必要用for循环
                     if USE_GPU:
                         test_labels = test_labels.cuda(GPU)
@@ -224,19 +252,24 @@ def main():
                     relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
                     _,predict_labels = torch.max(relations.data,1)
-
                     rewards = [1 if predict_labels[j]==test_labels[j] else 0 for j in range(batch_size)]
-
                     total_rewards += np.sum(rewards)
 
+                    mse = nn.MSELoss()
+                    one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, test_labels.view(-1, 1), 1))
+                    if USE_GPU:
+                        mse = mse.cuda(GPU)
+                        one_hot_labels = one_hot_labels.cuda(GPU)
+                    loss_tmp = float(mse(relations, one_hot_labels).data.numpy())
 
                 accuracy = total_rewards/1.0/CLASS_NUM/BATCH_NUM_PER_CLASS
                 accuracies.append(accuracy)
-
+                test_losses.append(loss_tmp)
 
             test_accuracy,h = mean_confidence_interval(accuracies)
+            test_loss = np.mean(np.array(test_losses))
 
-            print("test accuracy:",test_accuracy,"h:",h)
+            print("test accuracy:",test_accuracy, "h:",h, "test loss:",test_loss)
 
             if test_accuracy > last_accuracy:
 
