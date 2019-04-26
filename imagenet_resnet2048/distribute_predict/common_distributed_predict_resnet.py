@@ -360,7 +360,7 @@ if __name__ == '__main__':
     # params need to be set
     class_num = 1
     support_num_per_class = 20
-    support_set = "viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/fsl/support_set/jita_hdfs_merge"
+    support_set = "viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/fsl/support_set/jita_hdfs"
     batch_predict(resnet_model, model, support_set, class_num, support_num_per_class, url_gen, output_path, batch_size=200)
     print 'batch size: %s' % FLAGS.batch_size
     print 'output path: %s' % output_path

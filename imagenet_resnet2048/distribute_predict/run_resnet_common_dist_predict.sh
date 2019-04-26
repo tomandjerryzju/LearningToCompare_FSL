@@ -9,7 +9,7 @@ TMP_XML=resnet_${shop_type}_dist_predict.xml
 APP_NAME=predict_${shop_type}_pic
 MODEL_HDFS_PATH=viewfs://hadoop-meituan/ghnn01/user/hadoop-dpsr/huangyanchun/fsl/model/relation_network_keras_10way_20shot.pkl
 INPUT_HDFS_PATH=viewfs://hadoop-meituan/zw01nn11/warehouse/mart_dpsr_test.db/mainpic_fetch_ugcpics_needclassify
-OUTPUT_HDFS_PATH=viewfs://hadoop-meituan/zw01nn11/warehouse/mart_dpsr.db/mainpic_fsl_predict/class=jita_merge
+OUTPUT_HDFS_PATH=viewfs://hadoop-meituan/zw01nn11/warehouse/mart_dpsr.db/mainpic_fsl_predict/class=jita
 WORKER_SCRIPT=common_distributed_predict_resnet.py
 MODEL_DEFINE_NAME=pointwise_basic_dnn_model.py
 WORKERS=10
