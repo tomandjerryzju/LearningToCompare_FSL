@@ -256,7 +256,7 @@ def main():
                     total_rewards += np.sum(rewards)
 
                     mse = nn.MSELoss()
-                    one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, test_labels.view(-1, 1), 1))
+                    one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, test_labels.cpu().view(-1, 1), 1))
                     if USE_GPU:
                         mse = mse.cuda(GPU)
                         one_hot_labels = one_hot_labels.cuda(GPU)
