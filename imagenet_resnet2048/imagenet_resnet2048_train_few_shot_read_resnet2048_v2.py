@@ -260,7 +260,7 @@ def main():
                     if USE_GPU:
                         mse = mse.cuda(GPU)
                         one_hot_labels = one_hot_labels.cuda(GPU)
-                    loss_tmp = float(mse(relations, one_hot_labels).data.numpy())
+                    loss_tmp = float(mse(relations, one_hot_labels).cpu().data.numpy())
 
                 accuracy = total_rewards/1.0/CLASS_NUM/BATCH_NUM_PER_CLASS
                 accuracies.append(accuracy)
