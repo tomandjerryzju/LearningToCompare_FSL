@@ -30,8 +30,8 @@ def mini_imagenet_folders():
     '''
     不依赖pytorch
     '''
-    train_folder = '../../../imagenet/train_picvec'  # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
-    test_folder = '../../../imagenet/val_picvec'
+    train_folder = '../../../imagenet/train_extent_picvec'  # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
+    test_folder = '../../../imagenet/val_extent_picvec'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \
