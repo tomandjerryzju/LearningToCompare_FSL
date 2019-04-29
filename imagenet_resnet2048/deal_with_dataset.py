@@ -2,11 +2,11 @@ import os
 import shutil
 import random
 
-folders = os.listdir("/opt/huangyanchun/workspace/datasets/few_shot_learning/LearningToCompare_FSL/datas/imagenet_resnet2048/all_extentpic_ugcpic_checked/fsl_normal_dataset_train_extent_picvec")
+folders = os.listdir("/opt/huangyanchun/workspace/datasets/imagenet/train_extent_picvec")
 # folders_filter = []
 for folder in folders:
     if folder.startswith('n'):
-        shutil.rmtree("/opt/huangyanchun/workspace/datasets/few_shot_learning/LearningToCompare_FSL/datas/imagenet_resnet2048/all_extentpic_ugcpic_checked/fsl_normal_dataset_train_extent_picvec/%s" % folder)
+        shutil.rmtree("/opt/huangyanchun/workspace/datasets/imagenet/train_extent_picvec/%s" % folder)
         print folder
         # folders_filter.append(folder)
 
