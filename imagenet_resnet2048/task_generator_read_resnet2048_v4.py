@@ -115,6 +115,7 @@ class MiniImagenet(FewShotDataset):
 
     def __getitem__(self, idx):
         image_root = self.image_roots[idx]
+        print self.image_roots
         pic_vec = np.load(image_root)
         # if self.transform is not None:
         #     image = self.transform(image)
