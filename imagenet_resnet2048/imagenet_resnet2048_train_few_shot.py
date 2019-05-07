@@ -36,6 +36,9 @@ parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=True)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)   # 没用到
+parser.add_argument("-train_f","--train_folder",type=str,default='../../../imagenet/train_picvec')  # 不要以/开头，因为解析时会把第一个/去掉，从而引起报错
+parser.add_argument("-test_f","--test_folder",type=str,default='../../../imagenet/val_picvec')  # 不要以/开头，因为解析时会把第一个/去掉，从而引起报错
+parser.add_argument("-c_p","--checkpoint_path",type=str,default='./models/imagenet_resnet2048_relation_network_5way_10shot.pkl"')   # 没用到
 args = parser.parse_args()
 
 # limit gpu usage
@@ -56,6 +59,9 @@ LEARNING_RATE = args.learning_rate
 GPU = args.gpu
 USE_GPU = args.use_gpu
 HIDDEN_UNIT = args.hidden_unit
+TRAIN_FOLDER = args.train_folder
+TEST_FOLDER = args.test_folder
+CHECKPOINT_PATH = args.checkpoint_path
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0*np.array(data)
@@ -64,36 +70,6 @@ def mean_confidence_interval(data, confidence=0.95):
     h = se * sp.stats.t._ppf((1+confidence)/2., n-1)
     return m,h
 
-# class CNNEncoder(nn.Module):
-#     """docstring for ClassName"""
-#     def __init__(self):
-#         super(CNNEncoder, self).__init__()
-#         self.layer1 = nn.Sequential(
-#                         nn.Conv2d(3,64,kernel_size=3,padding=0),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU(),
-#                         nn.MaxPool2d(2))
-#         self.layer2 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=0),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU(),
-#                         nn.MaxPool2d(2))
-#         self.layer3 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=1),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU())
-#         self.layer4 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=1),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU())
-#
-#     def forward(self,x):
-#         out = self.layer1(x)
-#         out = self.layer2(out)
-#         out = self.layer3(out)
-#         out = self.layer4(out)
-#         #out = out.view(out.size(0),-1)
-#         return out # 64
 
 class RelationNetwork(nn.Module):
     """docstring for RelationNetwork"""
@@ -127,7 +103,7 @@ def main():
     # Step 1: init data folders
     print("init data folders")
     # init character folders for dataset construction
-    metatrain_folders,metatest_folders = tg.mini_imagenet_folders()
+    metatrain_folders,metatest_folders = tg.mini_imagenet_folders(TRAIN_FOLDER, TEST_EPISODE)
 
     # Step 2: init neural networks
     print("init neural networks")
@@ -142,12 +118,11 @@ def main():
     relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
     relation_network_scheduler = StepLR(relation_network_optim,step_size=20000,gamma=0.5)
 
-    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl")
-    if os.path.exists(checkpoint_path):
+    if os.path.exists(CHECKPOINT_PATH):
         if USE_GPU:
-            relation_network.load_state_dict(torch.load(checkpoint_path))
+            relation_network.load_state_dict(torch.load(CHECKPOINT_PATH))
         else:
-            relation_network.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
+            relation_network.load_state_dict(torch.load(CHECKPOINT_PATH, map_location='cpu'))
         print("load relation network success")
 
     # Step 3: build graph
@@ -167,9 +142,10 @@ def main():
         batch_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=BATCH_NUM_PER_CLASS,split="test",shuffle=True)
 
         # sample datas
-        samples,sample_labels = sample_dataloader.__iter__().next() #25*3*84*84
-        samples = preprocess_input(samples.numpy())
+        samples,sample_labels = sample_dataloader.__iter__().next() #25*3*84*84，sample_labels用不到
         batches,batch_labels = batch_dataloader.__iter__().next()
+        if USE_GPU:
+            batch_labels = batch_labels.cuda(GPU)
         batches = preprocess_input(batches.numpy())
 
         # calculate features
@@ -194,13 +170,17 @@ def main():
         relation_pairs = relation_pairs.view(relation_pairs.size(0), -1)
         relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
+        _, predict_labels = torch.max(relations.data, 1)
+        rewards = [1 if predict_labels[j] == batch_labels[j] else 0 for j in range(batch_labels.shape[0])]
+        total_rewards = np.sum(rewards)
+        accuracy = total_rewards / 1.0 / batch_labels.shape[0]
+
         mse = nn.MSELoss()
-        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS*CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.view(-1,1), 1))
+        one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, batch_labels.cpu().view(-1, 1), 1))
         if USE_GPU:
             mse = mse.cuda(GPU)
             one_hot_labels = one_hot_labels.cuda(GPU)
-        loss = mse(relations,one_hot_labels)
-
+        loss = mse(relations, one_hot_labels)
 
         # training
 
@@ -216,13 +196,14 @@ def main():
         relation_network_optim.step()
 
         if (episode+1)%1 == 0:
-                print("episode:",episode+1,"loss",loss.data)
+                print("episode:",episode+1, "train loss:",loss.data, "train accuracy:",accuracy)
 
         if (episode+1)%2000 == 0:
 
             # test
             print("Testing...")
             accuracies = []
+            test_losses = []
             for i in range(TEST_EPISODE):
                 total_rewards = 0
                 task = tg.MiniImagenetTask(metatest_folders,CLASS_NUM,SAMPLE_NUM_PER_CLASS,BATCH_NUM_PER_CLASS)
@@ -230,7 +211,7 @@ def main():
                 # num_per_class = 5
                 test_dataloader = tg.get_mini_imagenet_data_loader(task,num_per_class=BATCH_NUM_PER_CLASS,split="test",shuffle=False)
 
-                sample_images,sample_labels = sample_dataloader.__iter__().next()
+                sample_images,sample_labels = sample_dataloader.__iter__().next()   # sample_labels用不到
                 sample_images = preprocess_input(sample_images.numpy())
                 for test_images,test_labels in test_dataloader: # 只会执行循环体一次，因此此处没必要用for循环
                     if USE_GPU:
@@ -262,25 +243,29 @@ def main():
                     relations = relation_network(relation_pairs).view(-1,CLASS_NUM)
 
                     _,predict_labels = torch.max(relations.data,1)
-
                     rewards = [1 if predict_labels[j]==test_labels[j] else 0 for j in range(batch_size)]
-
                     total_rewards += np.sum(rewards)
 
+                    mse = nn.MSELoss()
+                    one_hot_labels = Variable(torch.zeros(BATCH_NUM_PER_CLASS * CLASS_NUM, CLASS_NUM).scatter_(1, test_labels.cpu().view(-1, 1), 1))
+                    if USE_GPU:
+                        mse = mse.cuda(GPU)
+                        one_hot_labels = one_hot_labels.cuda(GPU)
+                    loss_tmp = float(mse(relations, one_hot_labels).cpu().data.numpy())
 
                 accuracy = total_rewards/1.0/CLASS_NUM/BATCH_NUM_PER_CLASS
                 accuracies.append(accuracy)
-
+                test_losses.append(loss_tmp)
 
             test_accuracy,h = mean_confidence_interval(accuracies)
+            test_loss = np.mean(np.array(test_losses))
 
-            print("test accuracy:",test_accuracy,"h:",h)
+            print("test accuracy:",test_accuracy, "h:",h, "test loss:",test_loss)
 
             if test_accuracy > last_accuracy:
 
                 # save networks
-                # torch.save(feature_encoder.state_dict(),str("./models/miniimagenet_feature_encoder_" + str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot.pkl"))
-                torch.save(relation_network.state_dict(), checkpoint_path)
+                torch.save(relation_network.state_dict(), CHECKPOINT_PATH)
 
                 print("save networks for episode:",episode+1)
 

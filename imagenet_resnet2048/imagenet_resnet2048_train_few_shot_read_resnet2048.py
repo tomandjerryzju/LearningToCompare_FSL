@@ -19,8 +19,6 @@ import math
 import argparse
 import scipy as sp
 import scipy.stats
-from keras.applications.resnet50 import ResNet50
-from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 
@@ -36,6 +34,9 @@ parser.add_argument("-l","--learning_rate", type = float, default = 1e-5)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=True)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)   # 没用到
+parser.add_argument("-train_f","--train_folder",type=str,default='../../../imagenet/train_picvec')  # 不要以/开头，因为解析时会把第一个/去掉，从而引起报错
+parser.add_argument("-test_f","--test_folder",type=str,default='../../../imagenet/val_picvec')  # 不要以/开头，因为解析时会把第一个/去掉，从而引起报错
+parser.add_argument("-c_p","--checkpoint_path",type=str,default='./models/imagenet_resnet2048_relation_network_5way_10shot.pkl"')   # 没用到
 args = parser.parse_args()
 
 # limit gpu usage
@@ -56,6 +57,9 @@ LEARNING_RATE = args.learning_rate
 GPU = args.gpu
 USE_GPU = args.use_gpu
 HIDDEN_UNIT = args.hidden_unit
+TRAIN_FOLDER = args.train_folder
+TEST_FOLDER = args.test_folder
+CHECKPOINT_PATH = args.checkpoint_path
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0*np.array(data)
@@ -118,7 +122,7 @@ def main():
     # Step 1: init data folders
     print("init data folders")
     # init character folders for dataset construction
-    metatrain_folders,metatest_folders = tg.mini_imagenet_folders()
+    metatrain_folders,metatest_folders = tg.mini_imagenet_folders(TRAIN_FOLDER, TEST_EPISODE)
 
     # Step 2: init neural networks
     print("init neural networks")
@@ -133,12 +137,11 @@ def main():
     relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
     relation_network_scheduler = StepLR(relation_network_optim,step_size=20000,gamma=0.5)
 
-    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot_imagenet.pkl")
-    if os.path.exists(checkpoint_path):
+    if os.path.exists(CHECKPOINT_PATH):
         if USE_GPU:
-            relation_network.load_state_dict(torch.load(checkpoint_path))
+            relation_network.load_state_dict(torch.load(CHECKPOINT_PATH))
         else:
-            relation_network.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
+            relation_network.load_state_dict(torch.load(CHECKPOINT_PATH, map_location='cpu'))
         print("load relation network success")
 
     # Step 3: build graph
@@ -274,7 +277,7 @@ def main():
             if test_accuracy > last_accuracy:
 
                 # save networks
-                torch.save(relation_network.state_dict(), checkpoint_path)
+                torch.save(relation_network.state_dict(), CHECKPOINT_PATH)
 
                 print("save networks for episode:",episode+1)
 
