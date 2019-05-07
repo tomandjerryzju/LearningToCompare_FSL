@@ -18,7 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import task_generator_test_test as tg
+import task_generator_test as tg
 import os
 import math
 import argparse

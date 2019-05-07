@@ -18,7 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import task_generator_test_test as tg
+import task_generator_test as tg
 import os
 import math
 import argparse
@@ -261,13 +261,13 @@ def main():
     print("init neural networks")
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
-    support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3_hdfs_20_new"
+    support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3_hdfs_20"
     # image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_checked"
-    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/fsl_class_test_v2_top1000_random_100/yingtao"
+    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/bao_test_300"
     # image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_hdfs_compare"
     output_file = "result.txt"
     relation_network = RelationNetwork(FEATURE_DIM * 2, RELATION_DIM)
-    checkpoint_path = "./models/imagenet_resnet2048_relation_network_30way_20shot_imagenet.pkl"
+    checkpoint_path = "./models/imagenet_resnet2048_relation_network_30way_20shot_imagenet_3fcl_v12.pkl"
     if os.path.exists(checkpoint_path):
         if USE_GPU:
             relation_network.load_state_dict(torch.load(checkpoint_path))

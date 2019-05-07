@@ -14,7 +14,7 @@
 
 from torch.autograd import Variable
 import numpy as np
-import task_generator_test_test as tg
+import task_generator_test as tg
 import os
 import math
 import argparse
@@ -30,6 +30,8 @@ import time
 import shutil
 from keras.layers import Input, Dense
 from keras.models import Model
+import cPickle
+from PIL import Image
 
 parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
@@ -74,7 +76,10 @@ def RelationNetwork_keras(input_size, hidden_size):
 
 def prepare_pic_array(pic_path, img_height=224, img_width=224):
     try:
-        img = image.load_img(pic_path, target_size=(img_height, img_width))
+        # img = image.load_img(pic_path, target_size=(img_height, img_width))
+        img = Image.open(pic_path)
+        img = img.resize((224, 224))
+        img = img.convert('RGB')
         img = img.convert('RGB')
         x = image.img_to_array(img)
         if x.shape != (img_height, img_width, 3):
@@ -155,6 +160,7 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
     fout = open(output_file, 'a')
     output_root = os.path.join(os.path.abspath(os.path.dirname(output_file)), 'predict_result')
     support_features, support_labels = prepare_features_support_set(feature_encoder, support_set, class_num, support_num_per_class)
+    # print support_features
     support_features_ext = np.tile(support_features, (batch_size, 1, 1))
     for filename in file_list:
         try:
@@ -247,14 +253,24 @@ def main():
     print("init neural networks")
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
-    support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/"
-    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/0"
+    support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3_hdfs_OSL"
+    # image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/0"
+    image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_hdfs_compare"
     output_file = "result.txt"
     relation_network = RelationNetwork_keras(2048 * 2, 400)
+
     checkpoint_path = "./models/relation_network_keras.h5"
     relation_network.load_weights(checkpoint_path)
     print("load relation network success")
-    batch_predict(feature_encoder, relation_network, support_set, 6, 10, image_root, output_file, batch_size=20)
+
+    # pkl_path = "./models/relation_network_keras.pkl"
+    # wfin = tf.gfile.GFile(pkl_path, 'rb')
+    # wlist = cPickle.load(wfin)
+    # relation_network.set_weights(wlist)
+    # wfin.close()
+    # print("load relation network success")
+
+    batch_predict(feature_encoder, relation_network, support_set, 7, 1, image_root, output_file, batch_size=20)
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import task_generator_test_test as tg
+import task_generator_test as tg
 import os
 import math
 import argparse
@@ -32,13 +32,14 @@ from keras.preprocessing import image
 import random
 import time
 import shutil
+from PIL import Image
 
 parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
-parser.add_argument("-w","--class_num",type = int, default = 5)
-parser.add_argument("-s","--sample_num_per_class",type = int, default = 10) # 即论文里每个类的support images的个数
-parser.add_argument("-b","--batch_num_per_class",type = int, default = 30)  # 即论文里每个类的test images的个数
+parser.add_argument("-w","--class_num",type = int, default = 6)
+parser.add_argument("-s","--sample_num_per_class",type = int, default = 20) # 即论文里每个类的support images的个数
+parser.add_argument("-b","--batch_num_per_class",type = int, default = 10)  # 即论文里每个类的test images的个数
 parser.add_argument("-e","--episode",type = int, default= 1)
 parser.add_argument("-t","--test_episode", type = int, default = 1)
 parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
@@ -81,7 +82,9 @@ class RelationNetwork(nn.Module):
 
 def prepare_pic_array(pic_path, img_height=224, img_width=224):
     try:
-        img = image.load_img(pic_path, target_size=(img_height, img_width))
+        # img = image.load_img(pic_path, target_size=(img_height, img_width))
+        img = Image.open(pic_path)
+        img = img.resize((224, 224))
         img = img.convert('RGB')
         x = image.img_to_array(img)
         if x.shape != (img_height, img_width, 3):
@@ -101,6 +104,8 @@ def prepare_feature_per_class(feature_encoder, image_root, support_num_per_class
     feature = None
     for filename in file_list:
         try:
+            if filename.startswith('.'):
+                continue
             file_path = os.path.join(image_root, filename)
             pic_array = prepare_pic_array(file_path)
             if pic_array is None:
@@ -193,7 +198,7 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
                         line = [filename_list[i], str(predict_label), str(predict_score)]
                         line = '\t'.join(line) + '\n'
                         fout.write(line)
-                        if is_cp and predict_score > 0.4:
+                        if is_cp and predict_score >= threshold:
                             if not os.path.exists(output_root):
                                 os.mkdir(output_root)
                             tmp_fname = filename_list[i]
@@ -235,7 +240,7 @@ def batch_predict(feature_encoder, relation_network, support_set, class_num, sup
                 line = [filename_list[i], str(predict_label), str(predict_score)]
                 line = '\t'.join(line) + '\n'
                 fout.write(line)
-                if is_cp and predict_score > 0.4:
+                if is_cp and predict_score >= threshold:
                     if not os.path.exists(output_root):
                         os.mkdir(output_root)
                     tmp_fname = filename_list[i]
@@ -254,21 +259,23 @@ def main():
     print("init neural networks")
     feature_encoder = ResNet50(include_top=False, pooling='max', weights=None)
     feature_encoder.load_weights('resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
-    support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/"
+    support_set = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3_hdfs_20_new"
     # image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_checked"
-    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/test_v3/0"
+    image_root = "/Users/hyc/workspace/LearningToCompare_FSL/datas/imagenet_resnet2048/fsl_class_test_v2_top1000_random_100/yingtao"
+    # image_root = "/Users/hyc/workspace/datasets/fetch_extent_pic/fsl_test_100_hdfs_compare"
     output_file = "result.txt"
     relation_network = RelationNetwork(FEATURE_DIM * 2, RELATION_DIM)
-    checkpoint_path = "./models/imagenet_resnet2048_relation_network_5way_10shot.pkl"
+    checkpoint_path = "./models/imagenet_resnet2048_relation_network_30way_20shot_imagenet.pkl"
     if os.path.exists(checkpoint_path):
         if USE_GPU:
             relation_network.load_state_dict(torch.load(checkpoint_path))
         else:
             relation_network.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
         print("load relation network success")
-    batch_predict(feature_encoder, relation_network, support_set, 6, 10, image_root, output_file, batch_size=20)
+    batch_predict(feature_encoder, relation_network, support_set, 6, 20, image_root, output_file, batch_size=20)
 
 
 if __name__ == '__main__':
     is_cp = 1
+    threshold = 0.8
     main()

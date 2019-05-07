@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # code is based on https://github.com/katerakelly/pytorch-maml
 import torchvision
 import torchvision.datasets as dset
@@ -27,8 +26,8 @@ class Rotate(object):
         return x
 
 def mini_imagenet_folders():
-    train_folder = '../datas/imagenet_resnet2048/train'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
-    test_folder = '../datas/imagenet_resnet2048/val'
+    train_folder = '../datas/imagenet_resnet2048/train'
+    test_folder = '../datas/imagenet_resnet2048/train'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \
@@ -64,7 +63,7 @@ class MiniImagenetTask(object):
         for c in class_folders:
             # temp = [os.path.join(c, x) for x in os.listdir(c)]
             temp = []
-            for x in os.listdir(c): # 类别文件夹中包含隐藏文件无影响，这里会做判断
+            for x in os.listdir(c):
                 if x[0]!='.':
                     temp.append(os.path.join(c, x))
 
@@ -103,9 +102,7 @@ class MiniImagenet(FewShotDataset):
 
     def __getitem__(self, idx):
         image_root = self.image_roots[idx]
-        # img = image.load_img(image_root, target_size=(224, 224))
-        img = Image.open(image_root)
-        img = img.resize((224, 224))
+        img = image.load_img(image_root, target_size=(224, 224))
         img = img.convert('RGB')
         img = image.img_to_array(img)
         # if image.size != (224, 224):
