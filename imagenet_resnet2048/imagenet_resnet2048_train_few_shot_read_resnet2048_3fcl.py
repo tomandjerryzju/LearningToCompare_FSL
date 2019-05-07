@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import task_generator_read_resnet2048_v4 as tg
+import task_generator_read_resnet2048_3fcl as tg
 import os
 import math
 import argparse
