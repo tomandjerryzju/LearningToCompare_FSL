@@ -26,9 +26,9 @@ class Rotate(object):
         x = x.rotate(self.angle)
         return x
 
-def mini_imagenet_folders():
-    train_folder = '../datas/imagenet_resnet2048/train'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
-    test_folder = '../datas/imagenet_resnet2048/val'
+def mini_imagenet_folders(train_folder, test_folder):
+    # train_folder = '../datas/imagenet_resnet2048/train'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
+    # test_folder = '../datas/imagenet_resnet2048/val'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \

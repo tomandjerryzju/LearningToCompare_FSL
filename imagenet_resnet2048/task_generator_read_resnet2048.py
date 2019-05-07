@@ -26,12 +26,12 @@ class Rotate(object):
         x = x.rotate(self.angle)
         return x
 
-def mini_imagenet_folders():
+def mini_imagenet_folders(train_folder, test_folder):
     '''
     不依赖pytorch
     '''
-    train_folder = '../../../imagenet/train_picvec'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
-    test_folder = '../../../imagenet/val_picvec'
+    # train_folder = '../../../imagenet/train_picvec'   # 类别文件夹所在目录包含隐藏文件无影响，这里会做判断
+    # test_folder = '../../../imagenet/val_picvec'
 
     metatrain_folders = [os.path.join(train_folder, label) \
                 for label in os.listdir(train_folder) \
