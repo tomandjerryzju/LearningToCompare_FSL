@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-import task_generator_test as tg
+import task_generator as tg
 import os
 import math
 import argparse
@@ -23,7 +23,7 @@ from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 
-parser = argparse.ArgumentParser(description="One Shot Visual Recognition")
+parser = argparse.ArgumentParser(description="Few Shot Visual Recognition")
 parser.add_argument("-f","--feature_dim",type = int, default = 2048)
 parser.add_argument("-r","--relation_dim",type = int, default = 400)
 parser.add_argument("-w","--class_num",type = int, default = 5)
@@ -35,6 +35,9 @@ parser.add_argument("-l","--learning_rate", type = float, default = 0.001)
 parser.add_argument("-g","--gpu",type=int, default=0)
 parser.add_argument("-ug","--use_gpu",type=bool, default=False)
 parser.add_argument("-u","--hidden_unit",type=int,default=10)   # 没用到
+parser.add_argument("-train_f","--train_folder",type=str,default='../../../imagenet/train_picvec')  # 不要以/开头，因为解析时会把第一个/去掉，从而引起报错
+parser.add_argument("-test_f","--test_folder",type=str,default='../../../imagenet/val_picvec')  # 不要以/开头，因为解析时会把第一个/去掉，从而引起报错
+parser.add_argument("-c_p","--checkpoint_path",type=str,default='./models/imagenet_resnet2048_relation_network_5way_10shot.pkl"')   # 没用到
 args = parser.parse_args()
 
 # limit gpu usage
@@ -55,6 +58,9 @@ LEARNING_RATE = args.learning_rate
 GPU = args.gpu
 USE_GPU = args.use_gpu
 HIDDEN_UNIT = args.hidden_unit
+TRAIN_FOLDER = args.train_folder
+TEST_FOLDER = args.test_folder
+CHECKPOINT_PATH = args.checkpoint_path
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0*np.array(data)
@@ -63,36 +69,6 @@ def mean_confidence_interval(data, confidence=0.95):
     h = se * sp.stats.t._ppf((1+confidence)/2., n-1)
     return m,h
 
-# class CNNEncoder(nn.Module):
-#     """docstring for ClassName"""
-#     def __init__(self):
-#         super(CNNEncoder, self).__init__()
-#         self.layer1 = nn.Sequential(
-#                         nn.Conv2d(3,64,kernel_size=3,padding=0),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU(),
-#                         nn.MaxPool2d(2))
-#         self.layer2 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=0),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU(),
-#                         nn.MaxPool2d(2))
-#         self.layer3 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=1),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU())
-#         self.layer4 = nn.Sequential(
-#                         nn.Conv2d(64,64,kernel_size=3,padding=1),
-#                         nn.BatchNorm2d(64, momentum=1, affine=True),
-#                         nn.ReLU())
-#
-#     def forward(self,x):
-#         out = self.layer1(x)
-#         out = self.layer2(out)
-#         out = self.layer3(out)
-#         out = self.layer4(out)
-#         #out = out.view(out.size(0),-1)
-#         return out # 64
 
 class RelationNetwork(nn.Module):
     """docstring for RelationNetwork"""
@@ -126,7 +102,7 @@ def main():
     # Step 1: init data folders
     print("init data folders")
     # init character folders for dataset construction
-    metatrain_folders,metatest_folders = tg.mini_imagenet_folders()
+    metatrain_folders,metatest_folders = tg.mini_imagenet_folders(TRAIN_FOLDER, TEST_EPISODE)
 
     # Step 2: init neural networks
     print("init neural networks")
@@ -137,12 +113,11 @@ def main():
     if USE_GPU:
         relation_network.cuda(GPU)
 
-    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_" + "5" + "way_" + "10" + "shot.pkl")
-    if os.path.exists(checkpoint_path):
+    if os.path.exists(CHECKPOINT_PATH):
         if USE_GPU:
-            relation_network.load_state_dict(torch.load(checkpoint_path))
+            relation_network.load_state_dict(torch.load(CHECKPOINT_PATH))
         else:
-            relation_network.load_state_dict(torch.load(checkpoint_path, map_location='cpu'))
+            relation_network.load_state_dict(torch.load(CHECKPOINT_PATH, map_location='cpu'))
         print("load relation network success")
 
     total_accuracy = 0.0

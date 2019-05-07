@@ -12,14 +12,9 @@
 '''
 
 
-from torch.autograd import Variable
 import numpy as np
-import task_generator_test as tg
 import os
-import math
 import argparse
-import scipy as sp
-import scipy.stats
 from keras.applications.resnet50 import ResNet50
 from keras.applications.imagenet_utils import preprocess_input
 import tensorflow as tf
