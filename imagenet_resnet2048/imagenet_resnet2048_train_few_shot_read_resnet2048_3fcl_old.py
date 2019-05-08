@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import task_generator_read_resnet2048_v3 as tg
+import task_generator_read_resnet2048_compare as tg
 import os
 import math
 import argparse
@@ -135,7 +135,7 @@ def main():
     relation_network_optim = torch.optim.Adam(relation_network.parameters(),lr=LEARNING_RATE)
     relation_network_scheduler = StepLR(relation_network_optim,step_size=20000,gamma=0.5)
 
-    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot_imagenet_3fcl.pkl")
+    checkpoint_path = str("./models/imagenet_resnet2048_relation_network_"+ str(CLASS_NUM) +"way_" + str(SAMPLE_NUM_PER_CLASS) +"shot_imagenet_3fcl_v12.pkl")
     if os.path.exists(checkpoint_path):
         if USE_GPU:
             relation_network.load_state_dict(torch.load(checkpoint_path))
